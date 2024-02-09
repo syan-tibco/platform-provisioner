@@ -76,7 +76,7 @@ package recipe
 		PIPELINE_FUNCTION_INIT: "true" | "false" | true | false | *true
 		// the role to assume to. We will use current AWS role to assume to this role to perform the task.
 		// current role --> "arn:aws:iam::${_account}:role/${PIPELINE_AWS_MANAGED_ACCOUNT_ROLE}"
-		PIPELINE_AWS_MANAGED_ACCOUNT_ROLE: string
+		PIPELINE_AWS_MANAGED_ACCOUNT_ROLE?: string
 		...
 	}
 	// this is used for getting secret from AWS Secret Manager
