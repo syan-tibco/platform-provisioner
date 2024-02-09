@@ -1,0 +1,17 @@
+# this is the configuration for pipeline script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-shared-cue
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.cloud.tibco.com/created-by: {{ .Values.createdBy }}
+    app.kubernetes.io/name: {{ .Values.name }}-shared-cue
+    app.kubernetes.io/part-of: {{ .Values.partOf }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+data:
+  {{- $root := . }}
+  {{- range $path, $bytes := .Files.Glob "scripts/shared.cue" }}
+  {{ base $path }}: |
+{{ $root.Files.Get $path | indent 4 }}
+  {{- end }}
