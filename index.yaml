@@ -15,4 +15,34 @@ entries:
     urls:
     - https://github.com/syan-tibco/platform-provisioner/releases/download/common-dependency-1.0.0/common-dependency-1.0.0.tgz
     version: 1.0.0
-generated: "2024-02-09T04:26:43.609446389Z"
+  generic-runner:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2024-02-09T04:34:04.624467055Z"
+    description: generic-runner
+    digest: 829e18d50a0efa0b527bbaa18281e5a26b095c7bdab6dfe9953ad756c60f2361
+    home: https://github.com/TIBCOSoftware/tp-helm-charts
+    maintainers:
+    - email: cloud@tibco.com
+      name: TIBCO Cloud Dev Team
+    name: generic-runner
+    type: application
+    urls:
+    - https://github.com/syan-tibco/platform-provisioner/releases/download/generic-runner-1.0.0/generic-runner-1.0.0.tgz
+    version: 1.0.0
+  helm-install:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2024-02-09T04:34:04.736326444Z"
+    description: helm-install
+    digest: 6f4514a085ced832ea3caf229966770a49868b7e3257790f589c9e8239dd0aee
+    home: https://github.com/TIBCOSoftware/tp-helm-charts
+    maintainers:
+    - email: cloud@tibco.com
+      name: TIBCO Cloud Dev Team
+    name: helm-install
+    type: application
+    urls:
+    - https://github.com/syan-tibco/platform-provisioner/releases/download/helm-install-1.0.0/helm-install-1.0.0.tgz
+    version: 1.0.0
+generated: "2024-02-09T04:34:04.736336032Z"
