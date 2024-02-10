@@ -8,11 +8,6 @@ on:
         required: true
         default: ''
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: platform-provisioner
-
-
 jobs:
   release-docker:
     name: build and push
@@ -26,7 +21,7 @@ jobs:
         run: |
           echo "working on branch ${GITHUB_REF##*/}"
           cd ./docker/
-          DOCKER_REGISTRY=${{ secrets.DOCKERHUB_USER }}
-          PUSH_DOCKER_IMAGE=true
-          IMAGE_TAG="${{ github.event.inputs.tagName }}"
+          export DOCKER_REGISTRY=${{ secrets.DOCKERHUB_USER }}
+          export PUSH_DOCKER_IMAGE=true
+          export IMAGE_TAG="${{ github.event.inputs.tagName }}"
           ./build.sh
