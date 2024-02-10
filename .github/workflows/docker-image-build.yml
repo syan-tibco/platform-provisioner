@@ -1,0 +1,32 @@
+name: Build docker image
+
+on:
+  workflow_dispatch:
+    inputs:
+      tagName:
+        description: 'The promoted image tag name'
+        required: true
+        default: ''
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: platform-provisioner
+
+
+jobs:
+  release-docker:
+    name: build and push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker login
+        run: |
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login --username ${{ secrets.DOCKERHUB_USER }} --password-stdin
+      - name: docker build and push
+        run: |
+          echo "working on branch ${GITHUB_REF##*/}"
+          cd ./docker/
+          DOCKER_REGISTRY=${{ secrets.DOCKERHUB_USER }}
+          PUSH_DOCKER_IMAGE=true
+          IMAGE_TAG="${{ github.event.inputs.tagName }}"
+          ./build.sh
