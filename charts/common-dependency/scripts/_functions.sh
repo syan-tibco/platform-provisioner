@@ -1021,6 +1021,13 @@ function load-customized-env() {
   fi
 }
 
+# init-global-variables will init global variables
+# this needs to be as same as shard.cue defined
+function init-global-variables() {
+  export REPLACE_RECIPE=${REPLACE_RECIPE:-"true"}
+  export PIPELINE_LOG_DEBUG=${PIPELINE_LOG_DEBUG:-"false"}
+}
+
 #######################################
 # init: init function will be triggered when anyone source this file
 # Globals:
@@ -1041,6 +1048,25 @@ function init() {
     common::debug "PIPELINE_FUNCTION_INIT is not true; skip init"
     return 0
   fi
+
+  init-global-variables
+
+  for _file in _funcs_customize_*.sh; do
+    load-customized-env "./${_file}"
+  done
+
+  if [[ -z $(which yq4 2>/dev/null) ]]; then
+    common::err "yq4 is not installed"
+    exit 1
+  fi
+
+  # setup cloud account roles
+  export PIPELINE_AWS_MANAGED_ACCOUNT_ROLE=${PIPELINE_AWS_MANAGED_ACCOUNT_ROLE:-"${TIBCO_AWS_CONTROLLED_ACCOUNT_ROLE}"}
+  export PIPELINE_AZURE_FEDERATION_ROLE=${PIPELINE_AZURE_FEDERATION_ROLE:-"${TIBCO_AZURE_FEDERATION_ROLE}"}
+  export PIPELINE_AWS_COGNITO_IDENTITY_POOL=${PIPELINE_AWS_COGNITO_IDENTITY_POOL:-"${TIBCO_AWS_COGNITO_IDENTITY_POOL}"}
+  export PIPELINE_AWS_COGNITO_IDENTITY_POOL_LOGINS=${PIPELINE_AWS_COGNITO_IDENTITY_POOL_LOGINS:-"${TIBCO_AWS_COGNITO_IDENTITY_POOL_LOGINS}"}
+  export PIPELINE_TIBCO_AZURE_TIBCO_ORG_TENANT_ID=${PIPELINE_TIBCO_AZURE_TIBCO_ORG_TENANT_ID:-"${TIBCO_AZURE_TIBCO_ORG_TENANT_ID}"}
+  export PIPELINE_TIBCO_AZURE_MANAGED_IDENTITY=${PIPELINE_TIBCO_AZURE_MANAGED_IDENTITY:-"${TIBCO_AZURE_MANAGED_IDENTITY}"}
 }
 
 # init

@@ -60,7 +60,7 @@ package recipe
 	}
 	// this is used for setting up global environment variables inside the pipeline container
 	globalEnvVariable?: {
-		REPLACE_RECIPE: true
+		REPLACE_RECIPE: "true" | "false" | true | false | *true
 		// The variables that starts with PIPELINE_ will be used as pipeline control environment variables
 		// if true, will mock run pipeline. (only run meta part)
 		PIPELINE_MOCK: "true" | "false" | true | false | *false

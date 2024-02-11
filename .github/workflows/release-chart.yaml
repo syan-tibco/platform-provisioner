@@ -28,10 +28,6 @@ jobs:
         with:
           version: '3.13.1'
 
-      - name: Add dependency chart repos
-        run: |      
-          helm repo add tibco-platform https://tibcosoftware.github.io/tp-helm-charts/
-
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         with:
