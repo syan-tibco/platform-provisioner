@@ -83,7 +83,6 @@ fi
 # will only pass the content of the recipe file to the container
 export PIPLINE_INPUT_RECIPE_CONTENT=""
 [[ -f "${PIPELINE_INPUT_RECIPE}" ]] && PIPLINE_INPUT_RECIPE_CONTENT=$(cat ${PIPELINE_INPUT_RECIPE})
-[[ -z ${PIPLINE_INPUT_RECIPE_CONTENT} ]] && { echo "error: PIPLINE_INPUT_RECIPE_CONTENT is empty"; exit 1; }
 
 echo "Using platform provisioner docker image: ${PIPELINE_DOCKER_IMAGE}"
 
