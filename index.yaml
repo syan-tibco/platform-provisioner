@@ -3,6 +3,20 @@ entries:
   common-dependency:
   - apiVersion: v2
     appVersion: 1.0.0
+    created: "2024-02-14T20:54:28.946961991Z"
+    description: common-dependency
+    digest: 87c8546674deaa88400faad1d0436bbc88bafbdc8ddb4b9bdb37b3981ed45ca2
+    home: https://github.com/TIBCOSoftware/tp-helm-charts
+    maintainers:
+    - email: cloud@tibco.com
+      name: TIBCO Cloud Dev Team
+    name: common-dependency
+    type: application
+    urls:
+    - https://github.com/syan-tibco/platform-provisioner/releases/download/common-dependency-1.0.2/common-dependency-1.0.2.tgz
+    version: 1.0.2
+  - apiVersion: v2
+    appVersion: 1.0.0
     created: "2024-02-09T20:29:10.48726029Z"
     description: common-dependency
     digest: 90998d1c2c58ad37a235b9bb6ad8150fe9e4fbead8f4cc7cf50a8f4743527dc1
@@ -59,4 +73,4 @@ entries:
     urls:
     - https://github.com/syan-tibco/platform-provisioner/releases/download/helm-install-1.0.0/helm-install-1.0.0.tgz
     version: 1.0.0
-generated: "2024-02-09T20:29:10.487274617Z"
+generated: "2024-02-14T20:54:28.946979263Z"
