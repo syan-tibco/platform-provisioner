@@ -865,10 +865,6 @@ function common::process_meta() {
   local _input="${1}"
   local _recipe_file_name="${2}"
 
-  if ! common::validate_input "${_input}" "check_meta.cue"; then
-    return 1
-  fi
-
   local _tmp_recipe_file="recipe.tmp.yaml"
   local _meta_guiEnv=".meta.guiEnv"
   local _meta_globalEnvVariable=".meta.globalEnvVariable"
