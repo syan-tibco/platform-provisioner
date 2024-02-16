@@ -16,5 +16,4 @@ tasks:
       fileName: script.sh
       content: |
         echo "A normal case to test assume role and conditions"
-        export KUBECONFIG=~/.kube/config-on-prem
         kubectl get nodes

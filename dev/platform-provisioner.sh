@@ -49,6 +49,9 @@ set +x
 [[ -z "${ACCOUNT}" ]] && export ACCOUNT="on-prem"
 [[ -z "${REGION}" ]] && export REGION="us-west-2"
 
+# by default we want to use on prem kubeconfig file
+[[ -z "${PIPELINE_ON_PREM_KUBECONFIG}" ]] && export PIPELINE_ON_PREM_KUBECONFIG="true"
+
 [[ -z "${PIPELINE_INPUT_RECIPE}" ]] && export PIPELINE_INPUT_RECIPE="recipe.yaml"
 [[ -z "${PIPELINE_TRIGGER_RUN_SH}" ]] && export PIPELINE_TRIGGER_RUN_SH="true"
 [[ -z "${PIPELINE_LOG_DEBUG}" ]] && export PIPELINE_LOG_DEBUG="true"
