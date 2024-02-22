@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#
+# © 2024 Cloud Software Group, Inc.
+# All Rights Reserved. Confidential & Proprietary.
+#
+
 #######################################
 # run.sh: this can be used to generate random data for testing. It directly use pipelinerun to test.
 # Globals:
