@@ -3,6 +3,20 @@ entries:
   common-dependency:
   - apiVersion: v2
     appVersion: 1.0.0
+    created: "2024-02-26T17:06:15.402684851Z"
+    description: common-dependency
+    digest: 90efad2ae0e4ce39622b2036833344656d4e342dc09697683160bccc239ffba7
+    home: https://github.com/TIBCOSoftware/tp-helm-charts
+    maintainers:
+    - email: cloud@tibco.com
+      name: TIBCO Cloud Dev Team
+    name: common-dependency
+    type: application
+    urls:
+    - https://github.com/syan-tibco/platform-provisioner/releases/download/common-dependency-1.0.3/common-dependency-1.0.3.tgz
+    version: 1.0.3
+  - apiVersion: v2
+    appVersion: 1.0.0
     created: "2024-02-14T20:54:28.946961991Z"
     description: common-dependency
     digest: 87c8546674deaa88400faad1d0436bbc88bafbdc8ddb4b9bdb37b3981ed45ca2
@@ -46,6 +60,20 @@ entries:
   generic-runner:
   - apiVersion: v2
     appVersion: 1.0.0
+    created: "2024-02-26T17:06:15.547344145Z"
+    description: generic-runner
+    digest: 5fd3c9b2e1dd7f8bf4e125ff3ab13dbb9598f48f092ef3363bfb6f4269ab405a
+    home: https://github.com/TIBCOSoftware/tp-helm-charts
+    maintainers:
+    - email: cloud@tibco.com
+      name: TIBCO Cloud Dev Team
+    name: generic-runner
+    type: application
+    urls:
+    - https://github.com/syan-tibco/platform-provisioner/releases/download/generic-runner-1.0.1/generic-runner-1.0.1.tgz
+    version: 1.0.1
+  - apiVersion: v2
+    appVersion: 1.0.0
     created: "2024-02-09T04:34:04.624467055Z"
     description: generic-runner
     digest: 829e18d50a0efa0b527bbaa18281e5a26b095c7bdab6dfe9953ad756c60f2361
@@ -61,6 +89,20 @@ entries:
   helm-install:
   - apiVersion: v2
     appVersion: 1.0.0
+    created: "2024-02-26T17:06:15.662666749Z"
+    description: helm-install
+    digest: 317192e840b25dedb54ebc413bda77f3105953a01c7f557f54f7acdae17e9bf2
+    home: https://github.com/TIBCOSoftware/tp-helm-charts
+    maintainers:
+    - email: cloud@tibco.com
+      name: TIBCO Cloud Dev Team
+    name: helm-install
+    type: application
+    urls:
+    - https://github.com/syan-tibco/platform-provisioner/releases/download/helm-install-1.0.1/helm-install-1.0.1.tgz
+    version: 1.0.1
+  - apiVersion: v2
+    appVersion: 1.0.0
     created: "2024-02-09T04:34:04.736326444Z"
     description: helm-install
     digest: 6f4514a085ced832ea3caf229966770a49868b7e3257790f589c9e8239dd0aee
@@ -73,4 +115,4 @@ entries:
     urls:
     - https://github.com/syan-tibco/platform-provisioner/releases/download/helm-install-1.0.0/helm-install-1.0.0.tgz
     version: 1.0.0
-generated: "2024-02-14T20:54:28.946979263Z"
+generated: "2024-02-26T17:06:15.662723885Z"
