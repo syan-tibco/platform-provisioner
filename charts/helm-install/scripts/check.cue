@@ -1,5 +1,9 @@
 package recipe
 
+// Copyright © 2024. Cloud Software Group, Inc.
+// This file is subject to the license terms contained
+// in the license file that is distributed with this file.
+
 // we need to define bool as: "true" | "false" | true | false | *"default value"
 // the reason is that the GUI might convert bool to string or the bool value might be another varaible that is not boolean
 // the underline script to process all these will just use true or false

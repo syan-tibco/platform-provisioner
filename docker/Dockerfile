@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2024 TIBCO Software Inc.
+# All Rights Reserved. Confidential & Proprietary.
+#
+
 #---------------------------------------------------------------------------------------------
 # BUILD AWSCLI V2 offical doc:
 # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-source-install.html#source-getting-started-install-workflows-alpine

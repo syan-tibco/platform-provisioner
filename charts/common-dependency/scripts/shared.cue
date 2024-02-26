@@ -1,5 +1,9 @@
 package recipe
 
+// Copyright © 2024. Cloud Software Group, Inc.
+// This file is subject to the license terms contained
+// in the license file that is distributed with this file.
+
 // the soruce of truce of shared.cue is under common-dependency helm chart. All others a duplication of this file.
 // The duplication should be copied under docs folder to indicate this is only for documentation purpose see: PDP-1902
 
