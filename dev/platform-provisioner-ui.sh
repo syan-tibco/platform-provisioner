@@ -50,20 +50,19 @@ helm upgrade --install -n ${PIPLINE_NAMESPACE} helm-install helm-install \
 helm upgrade --install -n ${PIPLINE_NAMESPACE} provisioner-config-local provisioner-config-local \
   --version ^1.0.0 --repo ${PLATFORM_PROVISIONER_PIPLINE_REPO}
 
-K8S_REGISTRY_TOKEN=$(kubectl create secret docker-registry ecr \
+# create secret for pulling images from ECR
+_image_pull_secret_name="platform-provisioner-ui-image-pull"
+kubectl create secret docker-registry -n ${PIPLINE_NAMESPACE} ${_image_pull_secret_name} \
   --docker-server="${ECR_REPO}" \
   --docker-username=AWS \
-  --docker-password="${ECR_TOKEN}" \
-  --dry-run=client -o yaml | yq '.data[".dockerconfigjson"]')
+  --docker-password="${ECR_TOKEN}"
 
 # install provisioner web ui
 helm upgrade --install -n ${PIPLINE_NAMESPACE} platform-provisioner-ui platform-provisioner-ui --repo ${PLATFORM_PROVISIONER_PIPLINE_REPO} \
   --version ^1.0.0 \
-  --set image.repository=${ECR_REPO}/stratosphere/cic2-provisioner-webui \
+  --set image.repository="${ECR_REPO}"/stratosphere/cic2-provisioner-webui \
   --set image.tag=latest \
-  --set imagePullSecrets[0].name=platform-provisioner-ui-image-pull \
-  --set imagePullSecret.create=true \
-  --set imagePullSecret.secret="${K8S_REGISTRY_TOKEN}" \
+  --set imagePullSecrets[0].name=${_image_pull_secret_name} \
   --set guiConfig.onPremMode=true \
   --set guiConfig.pipelinesCleanUpEnabled=true \
   --set guiConfig.dataConfigMapName="provisioner-config-local-config"
