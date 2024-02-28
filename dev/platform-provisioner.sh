@@ -5,9 +5,8 @@
 # All Rights Reserved. Confidential & Proprietary.
 #
 
-# the idea of this script is to provide same run time env as tekton pipeline
 #######################################
-# setupRepo this will clone repo and copy files to current folder
+# platform-provisioner.sh: this script will use docker to run the pipeline task
 # Globals:
 #   ACCOUNT: the account you want to assume to
 #   REGION: the region

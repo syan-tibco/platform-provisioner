@@ -6,7 +6,7 @@
 #
 
 #######################################
-# run.sh: this can be used to generate random data for testing. It directly use pipelinerun to test.
+# platform-provisioner-pipelinerun.sh: this script will submit a pipelinerun to tekton.
 # Globals:
 #   PIPELINE_INPUT_RECIPE: the input file name; default is recipe.yaml
 #   PIPELINE_NAME:  We currently support 2 pipelines: generic-runner and helm-install
