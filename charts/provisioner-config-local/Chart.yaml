@@ -1,0 +1,17 @@
+#
+# Copyright © 2024. Cloud Software Group, Inc.
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+#
+
+apiVersion: v2
+name: provisioner-config-local
+description: Platform Provisioner local config
+type: application
+version: 1.0.5
+appVersion: "2.0.0"
+home: https://github.com/tibco/cicinfra-cic2-provisioner-webui
+icon: https://pbs.twimg.com/profile_images/1064638558110007296/K6HqaXwh_400x400.jpg
+maintainers:
+  - name: TIBCO CIC Compute Dev Team
+    email: compute-dev@tibco.com

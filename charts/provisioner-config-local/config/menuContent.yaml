@@ -1,0 +1,65 @@
+#
+# Copyright © 2024. Cloud Software Group, Inc.
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+#
+
+aws:
+  region:
+    values:
+      - 'ap-south-1'
+      - 'ap-southeast-2'
+      - 'eu-central-1'
+      - 'eu-west-1'
+      - 'us-east-1'
+      - 'us-east-2'
+      - 'us-west-2'
+    defaultValue: 'us-west-2'
+menuConfig:
+  - label: "Deploy"
+    icon: 'pi pi-fw pi-cloud-upload'
+    items:
+      - label: "Data Plane"
+        items:
+          - label: "Standard on-prem"
+            to: "/pipelines/helm-install?title=Standard on-prem"
+            config: pp-deploy-dp-on-prem.yaml
+          - label: "Register DP"
+            to: "/pipelines/generic-runner?title=Register DP"
+            config: pp-register-dp.yaml
+      - label: "Control Plane"
+        items:
+          - label: "Standard on-prem"
+            to: "/pipelines/helm-install?title=Standard on-prem"
+            config: pp-deploy-dp-on-prem.yaml
+            disabled: true
+      - separator: true
+      - label: "Observability"
+        items:
+          - label: "O11y fully Stack"
+            to: "/pipelines/helm-install?title=Deploy o11y stack"
+            config: pp-o11y-full.yaml
+          - label: "dp-config-es"
+            to: "/pipelines/helm-install?title=dp-config-es"
+            config: pp-o11y-dp-config-es.yaml
+          - label: "OTel Collector deamonset"
+            to: "/pipelines/helm-install?title=OTel Collector deamonset"
+            config: pp-o11y-otel-daemon.yaml
+      - label: "Ingress"
+        items:
+          - label: "ingress tracing"
+            to: "/pipelines/helm-install?title=Deploy ingress tracing"
+            config: pp-ingress-tracing.yaml
+            disabled: true
+  - label: "Pipelines"
+    to: "/pipelines"
+    icon: 'pi pi-fw pi-list'
+  - label: "Status"
+    to: "/status"
+    icon: 'pi pi-fw pi-cog' # see the list in https://primevue.org/icons/#list
+  - label: "Docs"
+    icon: 'pi pi-fw pi-book'
+    items:
+      - label: "Connect K8S"
+        to: "/connect"
+        icon: 'pi pi-fw pi-link'
