@@ -133,6 +133,21 @@ entries:
   provisioner-config-local:
   - apiVersion: v2
     appVersion: 2.0.0
+    created: "2024-03-05T23:54:05.526162348Z"
+    description: Platform Provisioner local config
+    digest: 577c16f32eb6467eb47bbd425c1c92354f3720de8b5212997bb99b5231b42f18
+    home: https://github.com/tibco/cicinfra-cic2-provisioner-webui
+    icon: https://pbs.twimg.com/profile_images/1064638558110007296/K6HqaXwh_400x400.jpg
+    maintainers:
+    - email: compute-dev@tibco.com
+      name: TIBCO CIC Compute Dev Team
+    name: provisioner-config-local
+    type: application
+    urls:
+    - https://github.com/syan-tibco/platform-provisioner/releases/download/provisioner-config-local-1.0.6/provisioner-config-local-1.0.6.tgz
+    version: 1.0.6
+  - apiVersion: v2
+    appVersion: 2.0.0
     created: "2024-02-28T17:31:06.528683912Z"
     description: Platform Provisioner local config
     digest: e90ec5555b45e1b570514a076c9e115b95f98bf5f46cd31fd3f7741f588003ea
@@ -146,4 +161,4 @@ entries:
     urls:
     - https://github.com/syan-tibco/platform-provisioner/releases/download/provisioner-config-local-1.0.5/provisioner-config-local-1.0.5.tgz
     version: 1.0.5
-generated: "2024-02-28T17:31:06.52870936Z"
+generated: "2024-03-05T23:54:05.526185772Z"
