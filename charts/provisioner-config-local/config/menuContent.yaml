@@ -24,9 +24,15 @@ menuConfig:
           - label: "Standard on-prem"
             to: "/pipelines/helm-install?title=Standard on-prem"
             config: pp-deploy-dp-on-prem.yaml
-          - label: "Register DP"
-            to: "/pipelines/generic-runner?title=Register DP"
-            config: pp-register-dp.yaml
+          - label: "Standard on-prem with certificate"
+            to: "/pipelines/helm-install?title=Standard on-prem cert"
+            config: pp-deploy-dp-on-prem-cert.yaml
+          - label: "Register Dev DP"
+            to: "/pipelines/generic-runner?title=Register Dev DP"
+            config: pp-register-dp-dev.yaml
+          - label: "Register Production DP"
+            to: "/pipelines/generic-runner?title=Register Production DP"
+            config: pp-register-dp-prod.yaml
       - label: "Control Plane"
         items:
           - label: "Standard on-prem"

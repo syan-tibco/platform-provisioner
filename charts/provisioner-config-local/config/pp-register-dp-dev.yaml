@@ -4,7 +4,11 @@
 # in the license file that is distributed with this file.
 #
 
-pipelineName: "Register DP"
+pipelineName: "Register Developer DP"
+description: |
+  This pipeline is a helper to register data plane with the control plane.
+  This is developer use case that all docker image will be pulled from AWS ECR.
+  To achieve this; we will use Platform Provisioner cloud service to get the ECR token.
 options:
   - name: "DATAPLANE_ID"
     type: string
@@ -23,7 +27,7 @@ options:
     guiType: input
     reference: "meta.guiEnv.GUI_DP_ECR_TOKEN"
     required: true
-    description: "We can get the token from aws cli command `aws ecr get-login-password --region <region>` or run it in <a href='https://provisioner.cic2.tibcocloud.com/pipelines/generic-runner' target='_blank'>Platform Provisioner</a> and paste the token here"
+    description: "We can get the token from aws cli command `aws ecr get-login-password --region <region>` or run it in <a href='https://provisioner.cic2.tibcocloud.com/pipelines/generic-runner?title=ECR%20token' target='_blank'>Platform Provisioner</a> and paste the token here"
   - name: "1. Namespace creation"
     type: string
     guiType: textarea
