@@ -166,6 +166,7 @@ recipe: |
           # ingress-nginx doc: https://docs.nginx.com/nginx-ingress-controller/
           # ingress-nginx chart values: https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml
           controller:
+            allowSnippetAnnotations: true # https://github.com/kubernetes/ingress-nginx/pull/10393
             service:
               type: LoadBalancer
             ingressClass:
