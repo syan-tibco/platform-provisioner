@@ -57,6 +57,11 @@ menuConfig:
             to: "/pipelines/helm-install?title=Deploy ingress tracing"
             config: pp-ingress-tracing.yaml
             disabled: true
+      - label: "Secrets"
+        items:
+          - label: "TIBCO Hub"
+            to: "/pipelines/generic-runner?title=secret-tibco-hub"
+            config: pp-deploy-secret-tibco-hub.yaml
   - label: "Maintenance"
     icon: 'pi pi-fw pi-wrench'
     items:
