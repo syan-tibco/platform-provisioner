@@ -60,6 +60,11 @@ menuConfig:
   - label: "Maintenance"
     icon: 'pi pi-fw pi-wrench'
     items:
+      - label: "Data Plane"
+        items:
+          - label: "Info"
+            to: "/pipelines/generic-runner?title=data-plane-info"
+            config: pp-maintain-dp-info.yaml
       - label: "AWS"
         items:
           - label: "Refresh ECR token"
