@@ -184,6 +184,7 @@ recipe: |
           base64Encoded: false
           skip: false
           content: |
+            kubectl create ns ${DP_INGRESS_NAMESPACE}
             kubectl apply -f - <<EOF
             apiVersion: v1
             kind: Secret
@@ -228,6 +229,7 @@ recipe: |
           base64Encoded: false
           skip: false
           content: |
+            kubectl create ns ${DP_INGRESS_NAMESPACE}
             kubectl apply -f - <<EOF
             apiVersion: v1
             kind: Secret

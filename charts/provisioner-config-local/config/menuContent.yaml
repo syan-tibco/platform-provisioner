@@ -57,6 +57,14 @@ menuConfig:
             to: "/pipelines/helm-install?title=Deploy ingress tracing"
             config: pp-ingress-tracing.yaml
             disabled: true
+  - label: "Maintenance"
+    icon: 'pi pi-fw pi-wrench'
+    items:
+      - label: "AWS"
+        items:
+          - label: "Refresh ECR token"
+            to: "/pipelines/generic-runner?title=Refresh ECR token"
+            config: pp-maintain-aws-refresh-ecr-token.yaml
   - label: "Pipelines"
     to: "/pipelines"
     icon: 'pi pi-fw pi-list'
