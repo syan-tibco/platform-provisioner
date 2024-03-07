@@ -62,6 +62,14 @@ menuConfig:
           - label: "TIBCO Hub"
             to: "/pipelines/generic-runner?title=secret-tibco-hub"
             config: pp-deploy-secret-tibco-hub.yaml
+  - label: "Undeploy"
+    icon: 'pi pi-fw pi-cloud-download'
+    items:
+      - label: "Data Plane"
+        items:
+          - label: "Data Plane"
+            to: "/pipelines/generic-runner?title=Undeploy-dp"
+            config: pp-undeploy-dp.yaml
   - label: "Maintenance"
     icon: 'pi pi-fw pi-wrench'
     items:
