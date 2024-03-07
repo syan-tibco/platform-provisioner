@@ -83,7 +83,7 @@ recipe: |
       GUI_DP_PUBLIC_DOMAIN: "localhost.dataplanes.pro"
       GUI_GITHUB_TOKEN: ""
       GUI_DP_STORAGE_CLASS: hostpath
-      GUI_DP_CONFIG_CHART_VERSION: "1.0.21"
+      GUI_DP_CONFIG_CHART_VERSION: "^1.0.0"
       GUI_DP_CONFIG_ES_VERSION: "8.12.1"
       GUI_DP_CONFIG_ES_NAMESPACE: "elastic-system"
       GUI_DP_DEPLOY_ECK: true
