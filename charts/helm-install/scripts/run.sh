@@ -51,6 +51,11 @@ function initial_assume_to_target_account() {
   common::debug "input account: ${AWS_ACCOUNT}"
   common::debug "input region: ${AWS_REGION}"
   common::debug "now assume to target account"
+  # Set the local CLUSTER_NAME as empty. The purpose of this initial_assume_to_target_account is to assume to target account.
+  # We don't want to connect to any cluster at this point. This is the initial jump. We will use credentials from the target account to connect to the cluster
+  if [[ -n ${CLUSTER_NAME} ]]; then
+    CLUSTER_NAME=""
+  fi
   if ! common::assume_role; then
     common::err "common::assume_role error"
     return 1
