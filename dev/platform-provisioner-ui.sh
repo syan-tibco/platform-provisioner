@@ -79,6 +79,9 @@ kubectl create secret docker-registry -n "${PIPLINE_NAMESPACE}" ${_image_pull_se
   --docker-username=AWS \
   --docker-password="${ECR_TOKEN}"
 
+echo "sleep 10 seconds to wait for secret to be ready"
+sleep 10
+
 # install provisioner web ui
 helm upgrade --install -n "${PIPLINE_NAMESPACE}" platform-provisioner-ui platform-provisioner-ui --repo "${PLATFORM_PROVISIONER_PIPLINE_REPO}" \
   --version ^1.0.0 \
