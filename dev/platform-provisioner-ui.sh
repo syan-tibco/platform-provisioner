@@ -79,15 +79,12 @@ kubectl create secret docker-registry -n "${PIPLINE_NAMESPACE}" ${_image_pull_se
   --docker-username=AWS \
   --docker-password="${ECR_TOKEN}"
 
-echo "sleep 10 seconds to wait for secret to be ready"
-sleep 10
-
 # install provisioner web ui
 helm upgrade --install -n "${PIPLINE_NAMESPACE}" platform-provisioner-ui platform-provisioner-ui --repo "${PLATFORM_PROVISIONER_PIPLINE_REPO}" \
   --version ^1.0.0 \
   --set image.repository="${ECR_REPO}"/stratosphere/cic2-provisioner-webui \
   --set image.tag=latest \
-  --set imagePullSecrets[0].name=${_image_pull_secret_name} \
+  --set "imagePullSecrets[0].name=${_image_pull_secret_name}" \
   --set guiConfig.onPremMode=true \
   --set guiConfig.pipelinesCleanUpEnabled=true \
   --set guiConfig.dataConfigMapName="provisioner-config-local-config"
