@@ -51,6 +51,13 @@ recipe: |
       GUI_DP_INGRESS_CLASS: "nginx"
       GUI_DP_STORAGE_CLASS: "hostpath"
       GUI_DP_DOMAIN: "localhost.dataplanes.pro"
+      GUI_DP_CONFIG_CHART_VERSION: "^1.0.0"
+      GUI_DP_CONFIG_ES_VERSION: "8.12.1"
+      GUI_DP_CONFIG_ES_NAMESPACE: "elastic-system"
+      GUI_DP_DEPLOY_ECK: true
+      GUI_DP_ECK_VERSION: "2.11.1"
+      GUI_DP_KUBE_PROMETHEUS_STACK_VERSION: "57.0.3"
+      GUI_DP_OPEN_TELEMETRY_VERSION: "0.74.1"
     globalEnvVariable:
       REPLACE_RECIPE: true
       PIPELINE_LOG_DEBUG: ${GUI_PIPELINE_LOG_DEBUG}
@@ -60,12 +67,20 @@ recipe: |
       DP_INGRESS_CLASS: ${GUI_DP_INGRESS_CLASS} # nginx, traefik
       DP_STORAGE_CLASS: ${GUI_DP_STORAGE_CLASS} # hostpath for docker for mac, standard for minikube
       DP_ES_RELEASE_NAME: dp-config-es
+      DP_CONFIG_CHART_VERSION: "${GUI_DP_CONFIG_CHART_VERSION}"
+      DP_CONFIG_ES_VERSION: "${GUI_DP_CONFIG_ES_VERSION}"
+      DP_CONFIG_ES_NAMESPACE: "${GUI_DP_CONFIG_ES_NAMESPACE}"
+      DP_DEPLOY_ECK: ${GUI_DP_DEPLOY_ECK}
+      DP_ECK_VERSION: "${GUI_DP_ECK_VERSION}" 
+      DP_KUBE_PROMETHEUS_STACK_VERSION: "${GUI_DP_KUBE_PROMETHEUS_STACK_VERSION}" # https://github.com/prometheus-community/helm-charts/releases
+      DP_OPEN_TELEMETRY_VERSION: "${GUI_DP_OPEN_TELEMETRY_VERSION}"
     tools:
       yq: "4.40"
       helm: "3.13"
   helmCharts:
     - name: eck-operator
-      version: 2.10.0
+      version: ${DP_ECK_VERSION}
+      condition: ${DP_DEPLOY_ECK}
       repo:
         helm:
           url: https://helm.elastic.co
@@ -79,7 +94,7 @@ recipe: |
         timeout: 1h
         createNamespace: true
     - name: dp-config-es
-      version: "1.0.17"
+      version: ${DP_CONFIG_CHART_VERSION}
       repo:
         helm:
           url: ${DP_CHART_REPO}
@@ -88,20 +103,20 @@ recipe: |
         content: |
           domain: ${DP_DOMAIN}
           es:
-            version: "8.11.1"
+            version: "${DP_CONFIG_ES_VERSION}"
             ingress:
               ingressClassName: ${DP_INGRESS_CLASS}
               service: ${DP_ES_RELEASE_NAME}-es-http
             storage:
               name: ${DP_STORAGE_CLASS}
           kibana:
-            version: "8.11.1"
+            version: "${DP_CONFIG_ES_VERSION}"
             ingress:
               ingressClassName: ${DP_INGRESS_CLASS}
               service: ${DP_ES_RELEASE_NAME}-kb-http
           apm:
             enabled: true
-            version: "8.11.1"
+            version: "${DP_CONFIG_ES_VERSION}"
             ingress:
               ingressClassName: ${DP_INGRESS_CLASS}
               service: ${DP_ES_RELEASE_NAME}-apm-http
@@ -115,7 +130,7 @@ recipe: |
         timeout: 1h
         createNamespace: true
     - name: kube-prometheus-stack
-      version: "54.2.1"
+      version: "${DP_KUBE_PROMETHEUS_STACK_VERSION}"
       repo:
         helm:
           url: https://prometheus-community.github.io/helm-charts
@@ -177,7 +192,7 @@ recipe: |
         timeout: 1h
         createNamespace: true
     - name: opentelemetry-collector
-      version: "0.74.1"
+      version: "${DP_OPEN_TELEMETRY_VERSION}"
       repo:
         helm:
           url: https://open-telemetry.github.io/opentelemetry-helm-charts
@@ -313,8 +328,8 @@ recipe: |
                     - tag_name: capability_instance_id
                       key: platform.tibco.com/capability-instance-id
                       from: pod
-                    - tag_name: app_type
-                      key: tib-dp-app
+                    - tag_name: tib_msg_stsrole
+                      key: tib_msg_stsrole
                       from: pod
                     - tag_name: tib-msg-group-name
                       key: tib-msg-group-name
@@ -337,6 +352,7 @@ recipe: |
                     - set(attributes["pod_name"], resource.attributes["k8s.pod.name"])
                     - set(attributes["pod_namespace"], resource.attributes["k8s.namespace.name"])
                     - set(attributes["app_id"], resource.attributes["app_id"])
+                    - set(attributes["app_id"], resource.attributes["capability-instance-id"]) where IsMatch(resource.attributes["app_type"], "msg-*")
                     - set(attributes["app_type"], resource.attributes["app_type"])
                     - set(attributes["dataplane_id"], resource.attributes["dataplane_id"])
                     - set(attributes["workload_type"], resource.attributes["workload_type"])
