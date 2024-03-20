@@ -9,7 +9,7 @@
 
 FROM python:3.11.7-alpine3.19 as builder-aws
 ARG AWS_CLI_VERSION
-ENV AWS_CLI_VERSION=${AWS_CLI_VERSION:-"2.13.28"}
+ENV AWS_CLI_VERSION=${AWS_CLI_VERSION:-"2.15.30"}
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -33,7 +33,7 @@ RUN apk add --no-cache \
 
 FROM python:3.11.7-alpine3.19 as builder-azure
 ARG AZURE_CLI_VERSION
-ENV AZURE_CLI_VERSION=${AZURE_CLI_VERSION:-"2.53.1"}
+ENV AZURE_CLI_VERSION=${AZURE_CLI_VERSION:-"2.58.0"}
 WORKDIR /azure
 RUN apk add --no-cache --update python3 py3-pip && \
     apk add --no-cache --update --virtual=build gcc musl-dev python3-dev libffi-dev openssl-dev cargo make && \
@@ -45,7 +45,7 @@ RUN apk add --no-cache --update python3 py3-pip && \
 # actual run time docker image
 FROM alpine:3.19
 
-LABEL maintainer="dev@cloud@tibco.com"
+LABEL maintainer="cloud@tibco.com"
 # labels see: https://github.com/opencontainers/image-spec/blob/56fb7838abe52ee259e37ece4b314c08bd45997f/annotations.md#annotations
 LABEL org.opencontainers.image.title="platform-provisioner"
 LABEL org.opencontainers.image.description="This provide basic tools for platform provisioner pipelines."
@@ -65,18 +65,18 @@ RUN ln -s /opt/aws-cli/bin/aws /usr/local/bin/aws
 COPY --from=builder-azure /azure /azure
 RUN ln -s /usr/bin/python3 /usr/local/bin/python && ln -s /azure/.venv/bin/az /usr/local/bin/az
 
-# eksctl
+# eksctl https://github.com/eksctl-io/eksctl/releases
 ARG EKSCTL_VERSION
-ENV EKSCTL_VERSION=${EKSCTL_VERSION:-"0.167"}
+ENV EKSCTL_VERSION=${EKSCTL_VERSION:-"0.174"}
 RUN CMD_NAME=eksctl && \
     curl --silent --location "https://github.com/eksctl-io/eksctl/releases/download/v${EKSCTL_VERSION}.0/${CMD_NAME}_$(uname -s)_${TARGETARCH}.tar.gz" | tar xz -C /tmp && \
     chmod +x /tmp/${CMD_NAME} && mv /tmp/${CMD_NAME} /usr/local/bin/${CMD_NAME}-${EKSCTL_VERSION} && \
     ln -sf /usr/local/bin/${CMD_NAME}-${EKSCTL_VERSION} /usr/local/bin/${CMD_NAME} && \
     ${CMD_NAME} version
 
-# calicoctl
+# calicoctl https://github.com/projectcalico/calico/releases
 ARG CALICOCTL_VERSION
-ENV CALICOCTL_VERSION=${CALICOCTL_VERSION:-"v3.23.2"}
+ENV CALICOCTL_VERSION=${CALICOCTL_VERSION:-"v3.27.2"}
 RUN CMD_NAME=calicoctl && \
     curl -sLO https://github.com/projectcalico/calico/releases/download/${CALICOCTL_VERSION}/calicoctl-${TARGETOS}-${TARGETARCH} && \
     chmod +x ./${CMD_NAME}-${TARGETOS}-${TARGETARCH} && mv -f ./${CMD_NAME}-${TARGETOS}-${TARGETARCH} /usr/local/bin/${CMD_NAME}-3.23 && \
@@ -94,17 +94,18 @@ RUN echo "/${ECR_LOGIN_VERSION}/${TARGETARCH}/docker-credential-ecr-login" && \
     ln -sf /usr/local/bin/${CMD_NAME}-${ECR_LOGIN_VERSION} /usr/local/bin/${CMD_NAME} && \
     ${CMD_NAME} -v
 
-# cue for yaml validation
+# cue for yaml validation https://github.com/cue-lang/cue/releases
 ARG CUE_VERSION
-ENV CUE_VERSION=${CUE_VERSION:-"0.7"}
+ENV CUE_VERSION=${CUE_VERSION:-"0.8"}
 RUN CMD_NAME=cue && \
     curl --silent --location "https://github.com/cue-lang/cue/releases/download/v${CUE_VERSION}.0/${CMD_NAME}_v${CUE_VERSION}.0_${TARGETOS}_${TARGETARCH}.tar.gz" | tar xz -C /tmp && \
     chmod +x /tmp/${CMD_NAME} && mv /tmp/${CMD_NAME} /usr/local/bin/${CMD_NAME}-${CUE_VERSION} && \
     ln -sf /usr/local/bin/${CMD_NAME}-${CUE_VERSION} /usr/local/bin/${CMD_NAME} && \
     ${CMD_NAME} version
 
+# Azure CLI Bicep https://github.com/Azure/bicep/releases
 ARG AZURE_CLI_BICEP_VERSION
-ENV AZURE_CLI_BICEP_VERSION=${AZURE_CLI_BICEP_VERSION:-"v0.23.1"}
+ENV AZURE_CLI_BICEP_VERSION=${AZURE_CLI_BICEP_VERSION:-"v0.26.54"}
 RUN echo "AZURE_CLI_BICEP_VERSION=${AZURE_CLI_BICEP_VERSION}" && \
     az --version && \
     az bicep install --version ${AZURE_CLI_BICEP_VERSION} && \
@@ -115,25 +116,25 @@ RUN echo "AZURE_CLI_BICEP_VERSION=${AZURE_CLI_BICEP_VERSION}" && \
 RUN ln -sf /usr/bin/yq /usr/local/bin/yq4
 
 # The following are for recipe meta.tools compatibility
-#yq 4 utility
-ENV YQ_VERSION_440=${YQ_VERSION_440:-"v4.40.4"}
+# yq 4 utility https://github.com/mikefarah/yq/releases
+ENV YQ_VERSION_440=${YQ_VERSION_440:-"v4.42.1"}
 RUN CMD_NAME=yq && \
     curl -sSLo /usr/local/bin/${CMD_NAME}-4.40 "https://github.com/mikefarah/${CMD_NAME}/releases/download/${YQ_VERSION_440}/${CMD_NAME}_${TARGETOS}_${TARGETARCH}" && \
     chmod +x /usr/local/bin/${CMD_NAME}-4.40
 
-# helm
-ENV HELM_VERSION_313=${HELM_VERSION_313:-"v3.13.1"}
+# helm https://github.com/helm/helm/releases
+ENV HELM_VERSION_313=${HELM_VERSION_313:-"v3.13.3"}
 RUN CMD_NAME=helm && \
     curl --silent --location "https://get.helm.sh/${CMD_NAME}-${HELM_VERSION_313}-${TARGETOS}-${TARGETARCH}.tar.gz" | tar xz -C /tmp && \
     chmod +x /tmp/${TARGETOS}-${TARGETARCH}/${CMD_NAME} && mv -f /tmp/${TARGETOS}-${TARGETARCH}/${CMD_NAME} /usr/local/bin/${CMD_NAME}-3.13
 
-ENV HELM_VERSION_314=${HELM_VERSION_314:-"v3.14.0"}
+ENV HELM_VERSION_314=${HELM_VERSION_314:-"v3.14.3"}
 RUN CMD_NAME=helm && \
     curl --silent --location "https://get.helm.sh/${CMD_NAME}-${HELM_VERSION_314}-${TARGETOS}-${TARGETARCH}.tar.gz" | tar xz -C /tmp && \
     chmod +x /tmp/${TARGETOS}-${TARGETARCH}/${CMD_NAME} && mv -f /tmp/${TARGETOS}-${TARGETARCH}/${CMD_NAME} /usr/local/bin/${CMD_NAME}-3.14
 
-# kubectl
-ENV KUBECTL_VERSION_128=${KUBECTL_VERSION_128:-"v1.28.2"}
+# kubectl https://kubernetes.io/releases/
+ENV KUBECTL_VERSION_128=${KUBECTL_VERSION_128:-"v1.28.7"}
 RUN CMD_NAME=kubectl && \
     curl -sLO https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION_128}/bin/${TARGETOS}/${TARGETARCH}/${CMD_NAME} && \
     chmod +x ./${CMD_NAME} && mv -f ./${CMD_NAME} /usr/local/bin/${CMD_NAME}-1.28
