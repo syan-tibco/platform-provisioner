@@ -36,9 +36,8 @@ menuConfig:
       - label: "Control Plane"
         items:
           - label: "Standard on-prem"
-            to: "/pipelines/helm-install?title=Standard on-prem"
-            config: pp-deploy-dp-on-prem.yaml
-            disabled: true
+            to: "/pipelines/helm-install?title=cp-on-prem"
+            config: pp-deploy-cp-on-prem.yaml
       - separator: true
       - label: "Observability"
         items:

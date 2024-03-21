@@ -78,6 +78,7 @@ recipe: |
   kind: helm-install
   meta:
     guiEnv:
+      note: "deploy-dp-config-es"
       GUI_DP_INGRESS_CLASS: nginx
       GUI_PIPELINE_LOG_DEBUG: false
       GUI_DP_PUBLIC_DOMAIN: "localhost.dataplanes.pro"

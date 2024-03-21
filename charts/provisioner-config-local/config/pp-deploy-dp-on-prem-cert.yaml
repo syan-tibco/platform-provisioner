@@ -48,6 +48,7 @@ recipe: |
   kind: helm-install
   meta:
     guiEnv:
+      note: "deploy-dp-on-prem-cert"
       GUI_DP_INSTALL_NGINX_INGRESS: true
       GUI_DP_INSTALL_TRAEFIK_INGRESS: false
       GUI_DP_DOMAIN: "localhost.dataplanes.pro"

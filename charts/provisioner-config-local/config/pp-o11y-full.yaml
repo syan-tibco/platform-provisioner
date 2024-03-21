@@ -47,6 +47,7 @@ recipe: |
   kind: helm-install
   meta:
     guiEnv:
+      note: "deploy-o11y-stack"
       GUI_PIPELINE_LOG_DEBUG: false
       GUI_DP_INGRESS_CLASS: "nginx"
       GUI_DP_STORAGE_CLASS: "hostpath"

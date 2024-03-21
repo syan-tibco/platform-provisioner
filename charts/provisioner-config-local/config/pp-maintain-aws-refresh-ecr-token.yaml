@@ -37,6 +37,7 @@ recipe: |
   kind: generic-runner
   meta:
     guiEnv:
+      note: "aws-refresh-ecr-token"
       GUI_DP_DATAPLANE_ID: ""
       GUI_DP_NAMESPACE: ""
       GUI_DP_ECR_TOKEN: ""
