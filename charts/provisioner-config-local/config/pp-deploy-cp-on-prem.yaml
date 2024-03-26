@@ -7,16 +7,24 @@
 pipelineName: "Deploy CP On-Prem Stack"
 description: |
   This pipeline will deploy supporting tools for CP on-prem use case.
-  Currently it is tested for kind environment.
+  Currently it is tested for kind environment. We have to use github token to access the dev helm charts.
+  After the deployment, you will get an email in MailDev to reset the password.
+  You need to use port-forward to access MailDev. 
+  ```bash
+  kubectl port-forward svc/development-mailserver -n tibco-ext 1080:1080
+  ```
+  Then you can access MailDev at `http://localhost:1080`
 options:
   - name: "GUI_GITHUB_USER_NAME"
     type: string
     guiType: input
+    required: true
     reference: "meta.guiEnv.GUI_GITHUB_USER_NAME"
     description: "The github username"
   - name: "GUI_GITHUB_TOKEN"
     type: string
     guiType: input
+    required: true
     reference: "meta.guiEnv.GUI_GITHUB_TOKEN"
     description: "The github token"
   - name: "GUI_CP_ADMIN_EMAIL"
@@ -40,19 +48,29 @@ recipe: |
   meta:
     guiEnv:
       note: "deploy-cp-on-prem"
-      GUI_CP_NAME_SPACE: tibco-cp
-      GUI_DP_RECIPES_PROVISION: true
+      # github
       GUI_GITHUB_USER_NAME: ""
       GUI_GITHUB_TOKEN: ""
       GUI_CP_ADMIN_EMAIL: "cp-test@tibco.com"
+      # env
+      GUI_CP_ENV: local
+      GUI_CP_NAME_SPACE: tibco-cp
+      # sso
+      GUI_CP_IDM_IDENTITY_MANAGEMENT_JWT_KEY_STORE_PASSWORD: "easy-to-remember"
+      GUI_CP_IDM_IDENTITY_MANAGEMENT_CLIENT_ID_SECRET_KEY: "dummy-encryption-secret"
+      GUI_CP_IDM_REGION_SECRET: "this.is.region.secret.donot.import"
+      GUI_CP_IDM_CP_ENCRYPTION_SECRET: "dummy-encryption-secret"
+      GUI_DP_RECIPES_PROVISION: true
     globalEnvVariable:
       REPLACE_RECIPE: true
       PIPELINE_LOG_DEBUG: false
       PIPELINE_CHECK_DOCKER_STATUS: false
-      CP_CLUSTER_NAME: cp-cluster
       GITHUB_USER_NAME: ${GUI_GITHUB_USER_NAME}
       GITHUB_TOKEN: ${GUI_GITHUB_TOKEN} # You need to set GITHUB_TOKEN for local use. For pipeline, it will be set by pipeline
       CP_CHART_REPO: https://${GITHUB_TOKEN}@raw.githubusercontent.com/tibco/tp-helm-charts/gh-pages
+      CP_ENV: ${GUI_CP_ENV}
+      CP_REGION: vagrant
+      CP_CLUSTER_NAME: cp-cluster
       CP_NAME_SPACE: "${GUI_CP_NAME_SPACE}"
       DP_RECIPES_PROVISION: ${GUI_DP_RECIPES_PROVISION} # Currently only support provision once. No upgrade
       CP_DNS_DOMAIN: cic2.pro
@@ -64,535 +82,645 @@ recipe: |
       CP_POD_CIDR: 192.168.0.0/16
       CP_INSTANCE_ID: local
       CP_ADMIN_EMAIL: ${GUI_CP_ADMIN_EMAIL}
+      # third party
+      CP_EXT_NAMESPACE: tibco-ext
+      # CP DB setup env
+      CP_DB_HOST: postgres.${CP_EXT_NAMESPACE}.svc.cluster.local
+      CP_DB_PORT: "5432"
+      CP_DB_USER_NAME_BASE64: cG9zdGdyZXM= # default postgres
+      CP_DB_PASSWORD_BASE64: cG9zdGdyZXM= # default postgres
+      CP_DB_NAME: postgres
+      CP_DP_SECRET_NAME: provider-cp-database-credentials
+      # SSO
+      CP_IDM_ISSUER: cp_platform_kind
+      CP_IDM_IDENTITY_MANAGEMENT_JWT_KEY_STORE_PASSWORD: "${GUI_CP_IDM_IDENTITY_MANAGEMENT_JWT_KEY_STORE_PASSWORD}"
+      CP_IDM_IDENTITY_MANAGEMENT_TA_PASS: "${GUI_CP_IDM_IDENTITY_MANAGEMENT_TA_PASS}"
+      CP_IDM_IDENTITY_MANAGEMENT_TA_CLIENT_ID: "${GUI_CP_IDM_IDENTITY_MANAGEMENT_TA_CLIENT_ID}"
+      CP_IDM_IDENTITY_MANAGEMENT_CLIENT_ID_SECRET_KEY: "${GUI_CP_IDM_IDENTITY_MANAGEMENT_CLIENT_ID_SECRET_KEY}"
+      CP_IDM_IDENTITY_MANAGEMENT_TIBCOACCOUNT_TSC_SECRET_KEY: "${GUI_CP_IDM_IDENTITY_MANAGEMENT_TIBCOACCOUNT_TSC_SECRET_KEY}"
+      CP_IDM_SENDGRID_SERVICE_API_KEY: "${GUI_CP_IDM_SENDGRID_SERVICE_API_KEY}"
+      CP_IDM_REGION_SECRET: "${GUI_CP_IDM_REGION_SECRET}"
+      CP_IDM_IDENTITY_MANAGEMENT_TIBCOACCOUNT_KEY_STORE_PASSWORD: "${GUI_CP_IDM_IDENTITY_MANAGEMENT_TIBCOACCOUNT_KEY_STORE_PASSWORD}"
+      CP_IDM_CP_ENCRYPTION_SECRET: "${GUI_CP_IDM_CP_ENCRYPTION_SECRET}"
+    tools:
+      yq: "4.40"
+      helm: "3.13"
+      kubectl: "1.28"
   preTasks:
-    - condition: true
-      clusters:
-        - name: ${CP_CLUSTER_NAME}
-      script:
-        ignoreErrors: false
-        fileName: script.sh
-        content: |
-          echo ""
+  - condition: true
+    clusters:
+      - name: ${CP_CLUSTER_NAME}
+    script:
+      ignoreErrors: false
+      fileName: script.sh
+      content: |
+        echo ""
   helmCharts:
-    - name: cert-manager
-      version: v1.13.2 # release: https://github.com/cert-manager/cert-manager/releases
-      condition: true
-      repo:
-        helm:
-          url: https://charts.jetstack.io
-      values:
-        keepPrevious: true
+  - name: cert-manager
+    version: v1.13.2 # release: https://github.com/cert-manager/cert-manager/releases
+    condition: true
+    repo:
+      helm:
+        url: https://charts.jetstack.io
+    values:
+      keepPrevious: true
+      content: |
+        installCRDs: true
+        serviceAccount:
+          create: true
+          name: cert-manager
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: cert-manager
+    namespace: cert-manager
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+  - name: cp-local-infra # postgres reverse-proxy pv/pvc
+    version: ^1.0.0
+    condition: true
+    repo:
+      helm:
+        url: ${CP_CHART_REPO}
+    values:
+      keepPrevious: false
+      content: |
+        cp-local-proxy:
+          additionalServerDomains: ~idp-local.(acme|octan).${CP_DNS_DOMAIN}
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: cp-local-infra
+    namespace: ${CP_EXT_NAMESPACE}
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+    hooks:
+      preDeploy:
+        ignoreErrors: false
+        base64Encoded: false
+        skip: false
         content: |
-          installCRDs: true
-          serviceAccount:
-            create: true
-            name: cert-manager
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: cert-manager
-      namespace: cert-manager
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
-    - name: cp-local-infra # postgres reverse-proxy pv/pvc
-      version: ^1.0.0
-      condition: true
-      repo:
-        helm:
-          url: ${CP_CHART_REPO}
-      values:
-        keepPrevious: false
+          kubectl apply -f - <<EOF
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: ${CP_EXT_NAMESPACE}
+            labels:
+              networking.platform.tibco.com/non-cp-ns: enable
+          EOF
+          function createGithubCredSecret(){
+            local _helm_repo_url=${1}
+            local _username=${2}
+            local _password=${3}
+            kubectl delete secret -n ${CP_EXT_NAMESPACE} cp-github-creds --ignore-not-found
+            kubectl create secret generic cp-github-creds -n ${CP_EXT_NAMESPACE}  --from-literal=username=${_username} --from-literal=password=${_password} --from-literal=helmRepo=${_helm_repo_url}
+          }
+          createGithubCredSecret "${CP_CHART_REPO}" "${GITHUB_USER_NAME}" "${GITHUB_TOKEN}"
+      postDeploy: # install maildev
+        ignoreErrors: false
+        base64Encoded: false
+        skip: false
         content: |
-          cp-local-proxy:
-            additionalServerDomains: ~idp-local.(acme|octan).${CP_DNS_DOMAIN}
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: cp-local-infra
-      namespace: tibco-ext
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
-      hooks:
-        preDeploy:
-          ignoreErrors: false
-          base64Encoded: false
-          skip: false
-          content: |
-            kubectl apply -f - <<EOF
-            apiVersion: v1
-            kind: Namespace
+          function configureLocalSMTP {
+            _ext_namespace=${CP_EXT_NAMESPACE}
+            #declare variables
+            local EMAIL_SERVICE_DEPLOYMENT_NAME=tp-cp-email-service
+            local DEVMAIL_SERVICE_NAME=development-mailserver.${_ext_namespace}.svc.cluster.local
+            local DEVMAIL_DEPLOYMENT_NAME=maildev
+            local DEVMAIL_POD_NAME=maildev
+          
+            #install maildev deployment
+            kubectl apply -f - << EOF
+            apiVersion: apps/v1
+            kind: Deployment
             metadata:
-              name: tibco-ext
+              name: maildev
+              namespace: ${_ext_namespace}
               labels:
-                networking.platform.tibco.com/non-cp-ns: enable
-            EOF
-            function createGithubCredSecret(){
-              local _helm_repo_url=${1}
-              local _username=${2}
-              local _password=${3}
-              kubectl delete secret -n tibco-ext cp-github-creds || true
-              kubectl create secret generic cp-github-creds -n tibco-ext  --from-literal=username=${_username} --from-literal=password=${_password} --from-literal=helmRepo=${_helm_repo_url}
-            }
-            createGithubCredSecret "${CP_CHART_REPO}" "${GITHUB_USER_NAME}" "${GITHUB_TOKEN}"
-    - name: cp-core-bootstrap # router hybrid-proxy compute-service cp-evn certificates
-      version: ^1.0.0
-      condition: true
-      repo:
-        helm:
-          url: ${CP_CHART_REPO}
-      values:
-        keepPrevious: false
-        content: |
-          cp-compute-services:
-            dpHelmRepositories:
-              - alias: default
-                conf:
-                  auth:
-                    password: ${GITHUB_TOKEN}
-                    username: ${GITHUB_USER_NAME}
-                  repoUrl: https://raw.githubusercontent.com/tibco/tp-helm-charts/gh-pages
-                default: true
-                type: chart-museum
-          global:
-            external:
-              clusterInfo:
-                nodeCIDR: ${CP_NODE_CIDR}
-                podCIDR: ${CP_POD_CIDR}
-              dnsDomain: ${CP_SERVICE_DNS_DOMAIN}
-              dnsTunnelDomain: ${CP_TUNNEL_DNS_DOMAIN}
-              provider: local
-              storage:
-                resources:
-                  requests:
-                    storage: 2Gi
-                storageClassName: ${CP_STORAGE_CLASS}
-                volumeName: local
-            tibco:
-              containerRegistry:
-                url: ${CP_CONTAINER_REGISTRY}
-              controlPlaneInstanceId: ${CP_INSTANCE_ID}
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: cp-core-bootstrap
-      namespace: ${CP_NAME_SPACE}
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
-      hooks:
-        preDeploy:
-          ignoreErrors: false
-          base64Encoded: false
-          skip: false
-          content: |
-            kubectl apply -f - <<EOF
-            apiVersion: v1
-            kind: Namespace
-            metadata:
-              name: ${CP_NAME_SPACE}
-              labels:
-                app.cloud.tibco.com/content: tibco-core
-                platform.tibco.com/controlplane-instance-id: ${CP_INSTANCE_ID}
-            EOF
-            
-            kubectl apply -f - <<EOF
-            apiVersion: v1
-            kind: PersistentVolume
-            metadata:
-              name: ${CP_INSTANCE_ID}
+                app: maildev
             spec:
-              accessModes:
-                - ReadWriteMany
-              capacity:
-                storage: 2Gi
-              hostPath:
-                path: /private/tibco/cp/${CP_INSTANCE_ID}/k8s/volumes/core
-                type: DirectoryOrCreate
-              persistentVolumeReclaimPolicy: Retain
-              volumeMode: Filesystem
-              storageClassName: ${CP_STORAGE_CLASS}
-            EOF
-    - name: cp-core-configuration # cp-subscription compute-services TibcoRoute
-      version: ^1.0.0
-      condition: true
-      repo:
-        helm:
-          url: ${CP_CHART_REPO}
-      values:
-        keepPrevious: false
-        content: |
-          global:
-            external:
-              clusterInfo:
-                nodeCIDR: ${CP_NODE_CIDR}
-                podCIDR: ${CP_POD_CIDR}
-              dnsDomain: ${CP_SERVICE_DNS_DOMAIN}
-              dnsTunnelDomain: ${CP_TUNNEL_DNS_DOMAIN}
-              provider: local
-            tibco:
-              containerRegistry:
-                url: ${CP_CONTAINER_REGISTRY}
-              controlPlaneInstanceId: ${CP_INSTANCE_ID}
-          podSecurityContext: ""
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: cp-core-configuration
-      namespace: ${CP_NAME_SPACE}
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
-    - name: dp-infra-recipes
-      version: ^1.0.0
-      condition: ${DP_RECIPES_PROVISION}
-      repo:
-        helm:
-          url: ${CP_CHART_REPO}
-      values:
-        keepPrevious: false
-        content: |
-          image:
-            name: distroless-base-debian-debug
-          imagePullSecret: ""
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: dp-infra-recipes
-      namespace: ${CP_NAME_SPACE}
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
-    - name: dp-oauth2proxy-recipes
-      version: ^1.0.0
-      condition: ${DP_RECIPES_PROVISION}
-      repo:
-        helm:
-          url: ${CP_CHART_REPO}
-      values:
-        keepPrevious: false
-        content: |
-          image:
-            name: distroless-base-debian-debug
-          imagePullSecret: ""
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: dp-oauth2proxy-recipes
-      namespace: ${CP_NAME_SPACE}
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
-    - name: cp-o11y-infra
-      version: ^1.0.0
-      condition: ${DP_RECIPES_PROVISION}
-      repo:
-        helm:
-          url: ${CP_CHART_REPO}
-      values:
-        keepPrevious: false
-        content: |
-          global:
-            external:
-              clusterInfo:
-                nodeCIDR: ${CP_NODE_CIDR}
-                podCIDR: ${CP_POD_CIDR}
-              dnsDomain: ${CP_SERVICE_DNS_DOMAIN}
-              dnsTunnelDomain: ${CP_TUNNEL_DNS_DOMAIN}
-              provider: local
-            tibco:
-              containerRegistry:
-                url: ${CP_CONTAINER_REGISTRY}
-              controlPlaneInstanceId: ${CP_INSTANCE_ID}
-          imagePullSecret: ""
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: cp-o11y-infra
-      namespace: ${CP_NAME_SPACE}
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
-    - name: tp-control-plane-on-prem # tp-cp-admin-webserver tp-cp-email-service tp-cp-identity-provider tp-cp-orchestrator tp-cp-pengine tp-cp-user-subscriptions tp-cp-web-server
-      version: ^1.0.0
-      condition: true
-      repo:
-        helm:
-          url: ${CP_CHART_REPO}
-      values:
-        keepPrevious: false
-        content: |
-          global:
-            IDM_TA_TSC_ISSUER: cp_platform_kind
-            STANDALONE_REGION: vagrant
-            external:
-              db_host: postgres.tibco-ext.svc.cluster.local
-              db_name: postgres
-              db_password: cG9zdGdyZXM=
-              db_port: "5432"
-              db_secret_name: provider-cp-database-credentials
-              db_username: cG9zdGdyZXM=
-              emailServer:
-                smtp:
-                  password: ""
-                  port: 1025
-                  server: development-mailserver.${CP_NAME_SPACE}.svc.cluster.local
-                  username: ""
-              enableLogging: false
-              environment: vagrant
-              region: vagrant
-              salesOrderNumber: mySalesOrderNumber
-              salesforceAccountId: mySalesForceAccountId
-          tp-cp-admin-webserver-on-prem:
-            cpadminwebserver:
-              resources:
-                limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
-                  cpu: 60m
-                  memory: 100Mi
-            fluentbit:
-              resources:
-                limits:
-                  cpu: 150m
-                  memory: 150Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-          tp-cp-cronjobs-on-prem:
-            cpcronjobservice:
-              resources:
-                limits:
-                  cpu: 100m
-                  memory: 100Mi
-                requests:
-                  cpu: 50m
-                  memory: 50Mi
-            fluentbit:
-              resources:
-                limits:
-                  cpu: 150m
-                  memory: 150Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-          tp-cp-email-service-on-prem:
-            cpemailservice:
-              resources:
-                limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
-                  cpu: 80m
-                  memory: 80Mi
-            fluentbit:
-              resources:
-                limits:
-                  cpu: 150m
-                  memory: 150Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-          tp-cp-orchestrator-on-prem:
-            cporchservice:
-              resources:
-                limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
-                  cpu: 80m
-                  memory: 80Mi
-            fluentbit:
-              resources:
-                limits:
-                  cpu: 150m
-                  memory: 150Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-          tp-cp-pengine-on-prem:
-            fluentbit:
-              resources:
-                limits:
-                  cpu: 150m
-                  memory: 150Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-            tpcppengineservice:
-              resources:
-                limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
-                  cpu: 80m
-                  memory: 80Mi
-          tp-cp-user-subscriptions-on-prem:
-            cpusersubservice:
-              resources:
-                limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
-                  cpu: 80m
-                  memory: 80Mi
-            fluentbit:
-              resources:
-                limits:
-                  cpu: 150m
-                  memory: 150Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-          tp-cp-web-server-on-prem:
-            cpwebserver:
-              resources:
-                limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-            fluentbit:
-              resources:
-                limits:
-                  cpu: 150m
-                  memory: 150Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-          tp-identity-management-on-prem:
-            fluentbit:
-              resources:
-                limits:
-                  cpu: 150m
-                  memory: 150Mi
-                requests:
-                  cpu: 100m
-                  memory: 100Mi
-            idm:
-              resources:
-                limits:
-                  cpu: 400m
-                  memory: 400Mi
-                requests:
-                  cpu: 100m
-                  memory: 250Mi
-          tsc:
-            deleteDBOnUninstall: true
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: local-tp-control-plane
-      namespace: ${CP_NAME_SPACE}
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
-      hooks:
-        postDeploy:
-          ignoreErrors: false
-          base64Encoded: false
-          skip: false
-          content: |
-            function configureLocalSMTP {
-              _cp_namespace=${CP_NAME_SPACE}
-              #declare variables
-              local EMAIL_SERVICE_DEPLOYMENT_NAME=tp-cp-email-service
-              local DEVMAIL_SERVICE_NAME=development-mailserver.${_cp_namespace}.svc.cluster.local
-              local DEVMAIL_DEPLOYMENT_NAME=maildev
-              local DEVMAIL_POD_NAME=maildev
-            
-            
-              #install maildev deployment
-              kubectl apply -f - << EOF
-              apiVersion: apps/v1
-              kind: Deployment
-              metadata:
-                name: maildev
-                namespace: ${_cp_namespace}
-                labels:
+              replicas: 1
+              selector:
+                matchLabels:
                   app: maildev
-              spec:
-                replicas: 1
-                selector:
-                  matchLabels:
+              template:
+                metadata:
+                  labels:
                     app: maildev
-                template:
-                  metadata:
-                    labels:
-                      app: maildev
-                  spec:
-                    containers:
-                      - name: maildev
-                        image: reldocker.tibco.com/pcp/maildev
-                        args: ["-s", "1025", "-w", "1080"]
-            EOF
-            
-              #install maildev service:
-              kubectl apply -f - <<EOF
-              apiVersion: v1
-              kind: Service
-              metadata:
-                name: development-mailserver
-                namespace: ${_cp_namespace}
-              spec:
-                selector:
+                spec:
+                  containers:
+                    - name: maildev
+                      image: reldocker.tibco.com/pcp/maildev
+                      args: ["-s", "1025", "-w", "1080"]
+          EOF
+          
+            #install maildev service:
+            kubectl apply -f - <<EOF
+            apiVersion: v1
+            kind: Service
+            metadata:
+              name: development-mailserver
+              namespace: ${_ext_namespace}
+            spec:
+              selector:
+                app: maildev
+              ports:
+                - name: smtp
+                  protocol: TCP
+                  port: 1025
+                  targetPort: 1025
+                - name: http
+                  protocol: TCP
+                  port: 1080
+                  targetPort: 1080
+          EOF
+          
+            kubectl apply -f - <<EOF
+            kind: NetworkPolicy
+            apiVersion: networking.k8s.io/v1
+            metadata:
+              name: maildev
+              namespace: ${_ext_namespace}
+              labels:
+                app.kubernetes.io/name: maildev
+            spec:
+              podSelector:
+                matchLabels:
                   app: maildev
-                ports:
-                  - name: smtp
-                    protocol: TCP
-                    port: 1025
-                    targetPort: 1025
-                  - name: http
-                    protocol: TCP
-                    port: 1080
-                    targetPort: 1080
-            EOF
-            
-              #set env vars in EMAIL microservice to use devmail service and port
-              kubectl set env deployment/$EMAIL_SERVICE_DEPLOYMENT_NAME -n ${_cp_namespace} TIBCO_EMAIL_SMTP=$DEVMAIL_SERVICE_NAME TIBCO_EMAIL_SMTP_PORT="1025"
-            
-              #wait for pod to be ready
-              kubectl wait deployment $DEVMAIL_DEPLOYMENT_NAME -n ${_cp_namespace} --for condition=Available=True --timeout=300s
-            }
-            configureLocalSMTP
-    - name: tp-control-plane-ops-on-prem
-      version: ^1.0.0
-      condition: true
-      repo:
-        helm:
-          url: ${CP_CHART_REPO}
-      values:
-        keepPrevious: false
+              ingress:
+                - ports:
+                    - protocol: TCP
+                      port: 1025
+                  from:
+                    - namespaceSelector:
+                        matchLabels:
+                          app.cloud.tibco.com/content: tibco-core
+              policyTypes:
+                - Ingress
+                - Egress
+          EOF
+  
+            # wait for pod to be ready
+            # echo "waiting for $DEVMAIL_DEPLOYMENT_NAME pod to be ready"
+            # kubectl wait deployment $DEVMAIL_DEPLOYMENT_NAME -n ${_ext_namespace} --for=condition=Available=True --timeout=300s
+          }
+          configureLocalSMTP
+  - name: cp-core-bootstrap # router hybrid-proxy compute-service cp-evn certificates
+    version: ^1.0.0
+    condition: true
+    repo:
+      helm:
+        url: ${CP_CHART_REPO}
+    values:
+      keepPrevious: false
+      content: |
+        cp-compute-services:
+          dpHelmRepositories:
+            - alias: default
+              conf:
+                auth:
+                  password: ${GITHUB_TOKEN}
+                  username: ${GITHUB_USER_NAME}
+                repoUrl: https://raw.githubusercontent.com/tibco/tp-helm-charts/gh-pages
+              default: true
+              type: chart-museum
+        global:
+          external:
+            clusterInfo:
+              nodeCIDR: ${CP_NODE_CIDR}
+              podCIDR: ${CP_POD_CIDR}
+            dnsDomain: ${CP_SERVICE_DNS_DOMAIN}
+            dnsTunnelDomain: ${CP_TUNNEL_DNS_DOMAIN}
+            provider: local
+            storage:
+              resources:
+                requests:
+                  storage: 2Gi
+              storageClassName: ${CP_STORAGE_CLASS}
+              volumeName: local
+          tibco:
+            containerRegistry:
+              password: ""
+              url: ${CP_CONTAINER_REGISTRY}
+              username: ""
+            controlPlaneInstanceId: ${CP_INSTANCE_ID}
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: cp-core-bootstrap
+    namespace: ${CP_NAME_SPACE}
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+    hooks:
+      preDeploy:
+        ignoreErrors: false
+        base64Encoded: false
+        skip: false
         content: |
-          global:
-            external:
-              admin:
-                email: ${CP_ADMIN_EMAIL}
-                firstname: Admin
-                lastname: User
-                salesOrderNumber: mySalesOrderNumber
-                soldToCustomerNumber: mySalesForceAccountId
-              environment: vagrant
-              region: vagrant
-            nodeCIDR: ${CP_NODE_CIDR}
-            who: local
-      cluster:
-        names:
-          - ${CP_CLUSTER_NAME}
-      releaseName: local-tp-control-plane-ops
-      namespace: ${CP_NAME_SPACE}
-      flags:
-        wait: true
-        timeout: 1h
-        createNamespace: true
+          kubectl apply -f - <<EOF
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: ${CP_NAME_SPACE}
+            labels:
+              app.cloud.tibco.com/content: tibco-core
+              platform.tibco.com/controlplane-instance-id: ${CP_INSTANCE_ID}
+          EOF
+          
+          kubectl apply -f - <<EOF
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: ${CP_INSTANCE_ID}
+          spec:
+            accessModes:
+              - ReadWriteMany
+            capacity:
+              storage: 2Gi
+            hostPath:
+              path: /private/tibco/cp/${CP_INSTANCE_ID}/k8s/volumes/core
+              type: DirectoryOrCreate
+            persistentVolumeReclaimPolicy: Retain
+            volumeMode: Filesystem
+            storageClassName: ${CP_STORAGE_CLASS}
+          EOF
+  - name: cp-core-configuration # cp-subscription compute-services TibcoRoute control-tower-extractor
+    version: ^1.0.0
+    condition: true
+    repo:
+      helm:
+        url: ${CP_CHART_REPO}
+    values:
+      keepPrevious: false
+      content: |
+        global:
+          external:
+            clusterInfo:
+              nodeCIDR: ${CP_NODE_CIDR}
+              podCIDR: ${CP_POD_CIDR}
+            dnsDomain: ${CP_SERVICE_DNS_DOMAIN}
+            dnsTunnelDomain: ${CP_TUNNEL_DNS_DOMAIN}
+            provider: local
+          tibco:
+            containerRegistry:
+              url: ${CP_CONTAINER_REGISTRY}
+            controlPlaneInstanceId: ${CP_INSTANCE_ID}
+        # otherwise we will get permission denied error
+        podSecurityContext: ""
+        securityContext: ""
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: cp-core-configuration
+    namespace: ${CP_NAME_SPACE}
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+  - name: dp-infra-recipes # cp-proxy integrationcore monitor-agent o11y o11y-exporter secret-controller
+    version: ^1.0.0
+    condition: ${DP_RECIPES_PROVISION}
+    repo:
+      helm:
+        url: ${CP_CHART_REPO}
+    values:
+      keepPrevious: false
+      content: |
+        image:
+          name: distroless-base-debian-debug
+        imagePullSecret: ""
+        # otherwise we will get permission denied error
+        podSecurityContext: ""
+        securityContext: ""
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: dp-infra-recipes
+    namespace: ${CP_NAME_SPACE}
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+    hooks:
+      preDeploy:
+        ignoreErrors: false
+        base64Encoded: false
+        skip: false
+        content: |
+          helm del -n ${CP_NAME_SPACE} dp-infra-recipes --ignore-not-found
+  - name: dp-oauth2proxy-recipes # oauth2proxy
+    version: ^1.0.0
+    condition: ${DP_RECIPES_PROVISION}
+    repo:
+      helm:
+        url: ${CP_CHART_REPO}
+    values:
+      keepPrevious: false
+      content: |
+        image:
+          name: distroless-base-debian-debug
+        imagePullSecret: ""
+        # otherwise we will get permission denied error
+        podSecurityContext: ""
+        securityContext: ""
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: dp-oauth2proxy-recipes
+    namespace: ${CP_NAME_SPACE}
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+    hooks:
+      preDeploy:
+        ignoreErrors: false
+        base64Encoded: false
+        skip: false
+        content: |
+          helm del -n ${CP_NAME_SPACE} dp-oauth2proxy-recipes --ignore-not-found
+  - name: cp-o11y-infra
+    version: ^1.0.0
+    condition: ${DP_RECIPES_PROVISION}
+    repo:
+      helm:
+        url: ${CP_CHART_REPO}
+    values:
+      keepPrevious: false
+      content: |
+        global:
+          external:
+            clusterInfo:
+              nodeCIDR: ${CP_NODE_CIDR}
+              podCIDR: ${CP_POD_CIDR}
+            dnsDomain: ${CP_SERVICE_DNS_DOMAIN}
+            dnsTunnelDomain: ${CP_TUNNEL_DNS_DOMAIN}
+            provider: local
+          tibco:
+            containerRegistry:
+              url: ${CP_CONTAINER_REGISTRY}
+            controlPlaneInstanceId: ${CP_INSTANCE_ID}
+        imagePullSecret: ""
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: cp-o11y-infra
+    namespace: ${CP_NAME_SPACE}
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+    hooks:
+      preDeploy:
+        ignoreErrors: false
+        base64Encoded: false
+        skip: false
+        content: |
+          helm del -n ${CP_NAME_SPACE} cp-o11y-infra --ignore-not-found
+  - name: tp-control-plane-on-prem # tp-cp-admin-webserver tp-cp-email-service tp-cp-identity-provider tp-cp-orchestrator tp-cp-pengine tp-cp-user-subscriptions tp-cp-web-server
+    version: ^1.0.0
+    condition: true
+    repo:
+      helm:
+        url: ${CP_CHART_REPO}
+    values:
+      keepPrevious: false
+      content: |
+        global:
+          IDM_TA_TSC_ISSUER: ${CP_IDM_ISSUER}
+          STANDALONE_REGION: ${CP_REGION}
+          external:
+            db_host: ${CP_DB_HOST}
+            db_name: ${CP_DB_NAME}
+            db_password: ${CP_DB_PASSWORD_BASE64} # base64 encoded
+            db_port: "${CP_DB_PORT}"
+            db_secret_name: ${CP_DP_SECRET_NAME}
+            db_username: ${CP_DB_USER_NAME_BASE64} # base64 encoded
+            emailServer:
+              sendgrid: null
+              smtp:
+                password: ""
+                port: 1025
+                server: development-mailserver.${CP_EXT_NAMESPACE}.svc.cluster.local
+                username: ""
+            enableLogging: false
+            environment: vagrant
+            region: ${CP_REGION}
+            salesOrderNumber: mySalesOrderNumber
+            salesforceAccountId: mySalesForceAccountId
+            # New change after 1.2.7441 https://jira.tibco.com/browse/PDP-2029
+            IDENTITY_MANAGEMENT_JWT_KEY_STORE_PASSWORD: "${CP_IDM_IDENTITY_MANAGEMENT_JWT_KEY_STORE_PASSWORD}"
+            IDENTITY_MANAGEMENT_TA_PASS: "${CP_IDM_IDENTITY_MANAGEMENT_TA_PASS}"
+            IDENTITY_MANAGEMENT_TA_CLIENT_ID: "${CP_IDM_IDENTITY_MANAGEMENT_TA_CLIENT_ID}"
+            IDENTITY_MANAGEMENT_CLIENT_ID_SECRET_KEY: "${CP_IDM_IDENTITY_MANAGEMENT_CLIENT_ID_SECRET_KEY}"
+            IDENTITY_MANAGEMENT_TIBCOACCOUNT_TSC_SECRET_KEY: "${CP_IDM_IDENTITY_MANAGEMENT_TIBCOACCOUNT_TSC_SECRET_KEY}"
+            SENDGRID_SERVICE_API_KEY: "${CP_IDM_SENDGRID_SERVICE_API_KEY}"
+            REGION_SECRET: "${CP_IDM_REGION_SECRET}"
+            IDENTITY_MANAGEMENT_TIBCOACCOUNT_KEY_STORE_PASSWORD: "${CP_IDM_IDENTITY_MANAGEMENT_TIBCOACCOUNT_KEY_STORE_PASSWORD}"
+            CP_ENCRYPTION_SECRET: "${CP_IDM_CP_ENCRYPTION_SECRET}"
+          who: ${CP_ENV}
+        tp-cp-admin-webserver-on-prem:
+          cpadminwebserver:
+            resources:
+              limits:
+                cpu: 200m
+                memory: 200Mi
+              requests:
+                cpu: 60m
+                memory: 100Mi
+          fluentbit:
+            resources:
+              limits:
+                cpu: 150m
+                memory: 150Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          replicaCount: 1
+        tp-cp-cronjobs-on-prem:
+          cpcronjobservice:
+            resources:
+              limits:
+                cpu: 100m
+                memory: 100Mi
+              requests:
+                cpu: 50m
+                memory: 50Mi
+          fluentbit:
+            resources:
+              limits:
+                cpu: 150m
+                memory: 150Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          replicaCount: 1
+        tp-cp-email-service-on-prem:
+          cpemailservice:
+            resources:
+              limits:
+                cpu: 200m
+                memory: 200Mi
+              requests:
+                cpu: 80m
+                memory: 80Mi
+          fluentbit:
+            resources:
+              limits:
+                cpu: 150m
+                memory: 150Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          replicaCount: 1
+        tp-cp-orchestrator-on-prem:
+          cporchservice:
+            resources:
+              limits:
+                cpu: 200m
+                memory: 200Mi
+              requests:
+                cpu: 80m
+                memory: 80Mi
+          fluentbit:
+            resources:
+              limits:
+                cpu: 150m
+                memory: 150Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          replicaCount: 1
+        tp-cp-pengine-on-prem:
+          fluentbit:
+            resources:
+              limits:
+                cpu: 150m
+                memory: 150Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          replicaCount: 1
+          tpcppengineservice:
+            resources:
+              limits:
+                cpu: 200m
+                memory: 200Mi
+              requests:
+                cpu: 80m
+                memory: 80Mi
+        tp-cp-user-subscriptions-on-prem:
+          cpusersubservice:
+            resources:
+              limits:
+                cpu: 200m
+                memory: 200Mi
+              requests:
+                cpu: 80m
+                memory: 80Mi
+          fluentbit:
+            resources:
+              limits:
+                cpu: 150m
+                memory: 150Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          replicaCount: 1
+        tp-cp-web-server-on-prem:
+          cpwebserver:
+            resources:
+              limits:
+                cpu: 200m
+                memory: 200Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          fluentbit:
+            resources:
+              limits:
+                cpu: 150m
+                memory: 150Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          replicaCount: 1
+        tp-identity-management-on-prem:
+          fluentbit:
+            resources:
+              limits:
+                cpu: 150m
+                memory: 150Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+          idm:
+            resources:
+              limits:
+                cpu: 400m
+                memory: 400Mi
+              requests:
+                cpu: 100m
+                memory: 250Mi
+        tsc:
+          deleteDBOnUninstall: true
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: ${CP_ENV}-tp-control-plane
+    namespace: ${CP_NAME_SPACE}
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+    hooks:
+      postDeploy:
+        ignoreErrors: false
+        base64Encoded: false
+        skip: false
+        content: |
+          # TODO we should remove this after the bug on CP chart is fixed
+          kubectl set env deployment/tp-cp-email-service -n ${CP_NAME_SPACE} TIBCO_EMAIL_SMTP_PORT="1025"
+  - name: tp-control-plane-ops-on-prem
+    version: ^1.0.0
+    condition: true
+    repo:
+      helm:
+        url: ${CP_CHART_REPO}
+    values:
+      keepPrevious: false
+      content: |
+        global:
+          external:
+            admin:
+              email: ${CP_ADMIN_EMAIL}
+              firstname: Admin
+              lastname: User
+              salesOrderNumber: mySalesOrderNumber
+              soldToCustomerNumber: mySalesForceAccountId
+            environment: vagrant
+            region: ${CP_REGION}
+          nodeCIDR: ${CP_NODE_CIDR}
+          who: ${CP_ENV}
+    cluster:
+      names:
+        - ${CP_CLUSTER_NAME}
+    releaseName: ${CP_ENV}-tp-control-plane-ops
+    namespace: ${CP_NAME_SPACE}
+    flags:
+      wait: true
+      timeout: 1h
+      createNamespace: true
+    hooks:
+      preDeploy:
+        ignoreErrors: false
+        base64Encoded: false
+        skip: false
+        content: |
+          helm del -n ${CP_NAME_SPACE} ${CP_ENV}-tp-control-plane-ops --ignore-not-found
