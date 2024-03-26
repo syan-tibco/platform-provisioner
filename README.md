@@ -1,8 +1,14 @@
 <!-- TOC -->
 * [Platform Provisioner](#platform-provisioner)
   * [Get recipes from TIBCO GitHub](#get-recipes-from-tibco-github)
-  * [Run the platform-provisioner in headless mode](#run-the-platform-provisioner-in-headless-mode)
+  * [Run the platform-provisioner in headless mode with docker container](#run-the-platform-provisioner-in-headless-mode-with-docker-container)
     * [Prerequisite](#prerequisite)
+    * [Run the platform-provisioner in headless mode](#run-the-platform-provisioner-in-headless-mode)
+  * [Run the platform-provisioner in headless mode with tekton pipeline](#run-the-platform-provisioner-in-headless-mode-with-tekton-pipeline)
+    * [Prerequisite](#prerequisite-1)
+      * [1. install tekton](#1-install-tekton)
+      * [2. install pipeline](#2-install-pipeline)
+    * [Run the platform-provisioner in headless mode](#run-the-platform-provisioner-in-headless-mode-1)
   * [Docker image for Platform Provisioner](#docker-image-for-platform-provisioner)
 <!-- TOC -->
 
